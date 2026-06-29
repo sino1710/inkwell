@@ -51,6 +51,7 @@
       const [authError, setAuthError] = useState("");
       const [publishStep, setPublishStep] = useState(1);
       const [publishForm, setPublishForm] = useState({ title: "", genre: "Mystery", body: "" });
+      const [premiumStep, setPremiumStep] = useState(1);
 
       const showNotif = (msg) => {
         setNotification(msg);
@@ -80,7 +81,7 @@
       }, [loadStories]);
 
       const freeStoriesLeft = () => {
-        if (!profile) return 0;
+        if (!profile) return 1; // default to free if profile still loading
         if (profile.is_premium) return Math.max(0, 4 - profile.stories_posted);
         return profile.stories_posted === 0 ? 1 : 0;
       };
@@ -137,6 +138,7 @@
         setLoading(true);
         await sb(`/rest/v1/profiles?id=eq.${profile.id}`, { method: "PATCH", body: JSON.stringify({ is_premium: true }) }, session.access_token);
         setProfile((p) => ({ ...p, is_premium: true }));
+        setPremiumStep(1);
         setView("feed");
         showNotif("✦ Welcome to Premium!");
         setLoading(false);
@@ -364,22 +366,49 @@
 
           {view === "premium" && (
             <main style={st.main}>
-              <button style={st.backBtn} onClick={() => setView("feed")}>← Back</button>
+              <button style={st.backBtn} onClick={() => { setView("feed"); setPremiumStep(1); }}>← Back</button>
               <div style={st.modal}>
-                <div style={st.premiumBadgeLarge}>✦ Premium</div>
-                <h2 style={st.modalTitle}>Upgrade to Premium</h2>
-                <p style={st.modalSub}>For writers serious about sharing their work.</p>
-                <div style={st.perks}>
-                  {[["4 free story posts/month","Post up to 4 stories included in your plan. Extra stories are $0.50 each."],["✦ Premium badge","A gold badge next to your name on every story you publish."],["Priority in the feed","Your stories get featured at the top of the genre feed."],["Early access to new features","Be first to try new reactions, stats, and tools."]].map(([title, desc]) => (
-                    <div key={title} style={st.perkItem}><div style={st.perkTitle}>{title}</div><div style={st.perkDesc}>{desc}</div></div>
-                  ))}
-                </div>
-                <div style={st.priceBox}><span style={st.price}>$1</span><span style={st.pricePer}> / month</span></div>
-                {session ? (profile?.is_premium
-                  ? <div style={{...st.publishBtn2,background:"#1A1825",color:"#4ade80",cursor:"default",textAlign:"center"}}>✓ You're already Premium</div>
-                  : <button style={st.publishBtn2} onClick={handleUpgradeToPremium} disabled={loading}>{loading ? "Upgrading..." : "Subscribe for $1/month"}</button>
-                ) : <button style={st.publishBtn2} onClick={() => { setAuthMode("signup"); setView("auth"); }}>Sign up to Subscribe</button>}
-                <p style={{color:"#A7A9BE",fontSize:12,textAlign:"center",marginTop:12}}>Cancel anytime. No hidden fees.</p>
+                {premiumStep === 1 && (
+                  <>
+                    <div style={st.premiumBadgeLarge}>✦ Premium</div>
+                    <h2 style={st.modalTitle}>Upgrade to Premium</h2>
+                    <p style={st.modalSub}>For writers serious about sharing their work.</p>
+                    <div style={st.perks}>
+                      {[["4 free story posts/month","Post up to 4 stories included in your plan. Extra stories are $0.50 each."],["✦ Premium badge","A gold badge next to your name on every story you publish."],["Priority in the feed","Your stories get featured at the top of the genre feed."],["Early access to new features","Be first to try new reactions, stats, and tools."]].map(([title, desc]) => (
+                        <div key={title} style={st.perkItem}><div style={st.perkTitle}>{title}</div><div style={st.perkDesc}>{desc}</div></div>
+                      ))}
+                    </div>
+                    <div style={st.priceBox}><span style={st.price}>$1</span><span style={st.pricePer}> / month</span></div>
+                    {session ? (profile?.is_premium
+                      ? <div style={{...st.publishBtn2,background:"#1A1825",color:"#4ade80",cursor:"default",textAlign:"center"}}>✓ You're already Premium</div>
+                      : <button style={st.publishBtn2} onClick={() => setPremiumStep(2)}>Subscribe for $1/month →</button>
+                    ) : <button style={st.publishBtn2} onClick={() => { setAuthMode("signup"); setView("auth"); }}>Sign up to Subscribe</button>}
+                    <p style={{color:"#A7A9BE",fontSize:12,textAlign:"center",marginTop:12}}>Cancel anytime. No hidden fees.</p>
+                  </>
+                )}
+                {premiumStep === 2 && (
+                  <>
+                    <h2 style={st.modalTitle}>Payment Details</h2>
+                    <p style={st.modalSub}>Your Premium subscription starts today.</p>
+                    <div style={st.payCard}>
+                      <div style={st.payRow}><span>Inkwell Premium</span><span style={st.payAmt}>$1.00/mo</span></div>
+                      <div style={st.divider} />
+                      <div style={{...st.payRow,fontWeight:700}}><span>Total today</span><span style={st.payAmt}>$1.00</span></div>
+                    </div>
+                    <div style={st.fakeCard}>
+                      <div style={st.formGroup}><label style={st.label}>Card number</label><input style={st.input} placeholder="4242 4242 4242 4242" /></div>
+                      <div style={{display:"flex",gap:12}}>
+                        <div style={{...st.formGroup,flex:1}}><label style={st.label}>Expiry</label><input style={st.input} placeholder="MM / YY" /></div>
+                        <div style={{...st.formGroup,flex:1}}><label style={st.label}>CVC</label><input style={st.input} placeholder="123" /></div>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:12}}>
+                      <button style={st.backBtn2} onClick={() => setPremiumStep(1)}>← Go Back</button>
+                      <button style={{...st.publishBtn2,flex:2}} onClick={handleUpgradeToPremium} disabled={loading}>{loading ? "Processing..." : "Pay & Subscribe ✦"}</button>
+                    </div>
+                    <p style={{color:"#A7A9BE",fontSize:12,textAlign:"center",marginTop:12}}>Cancel anytime. No hidden fees.</p>
+                  </>
+                )}
               </div>
             </main>
           )}
