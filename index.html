@@ -59,8 +59,17 @@
       };
 
       const loadStories = useCallback(async () => {
-        const data = await sb("/rest/v1/stories?select=*,reactions(emoji,user_id)&order=created_at.desc");
-        if (Array.isArray(data)) setStories(data);
+        const storiesData = await sb("/rest/v1/stories?select=*&order=created_at.desc");
+        const reactionsData = await sb("/rest/v1/reactions?select=*");
+        if (Array.isArray(storiesData)) {
+          const merged = storiesData.map((story) => ({
+            ...story,
+            reactions: Array.isArray(reactionsData)
+              ? reactionsData.filter((r) => r.story_id === story.id)
+              : [],
+          }));
+          setStories(merged);
+        }
       }, []);
 
       const loadProfile = async (userId, token) => {
