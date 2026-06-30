@@ -179,7 +179,21 @@
         await sb("/rest/v1/reactions", { method: "POST", body: JSON.stringify({ story_id: storyId, user_id: session.user.id, emoji }) }, session.access_token);
       };
 
-      const reactionCounts = (reactions = []) =>
+      const [speaking, setSpeaking] = useState(false);
+
+      const handleListen = (text) => {
+        if (speaking) {
+          window.speechSynthesis.cancel();
+          setSpeaking(false);
+          return;
+        }
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.95;
+        utterance.pitch = 1;
+        utterance.onend = () => setSpeaking(false);
+        window.speechSynthesis.speak(utterance);
+        setSpeaking(true);
+      };
         reactions.reduce((acc, r) => { acc[r.emoji] = (acc[r.emoji] || 0) + 1; return acc; }, { "❤️": 0, "😮": 0, "😂": 0 });
 
       const hasReacted = (reactions = [], emoji) =>
@@ -299,6 +313,9 @@
                 <h1 style={st.articleTitle}>{activeStory.title}</h1>
                 <div style={st.articleMeta}>
                   <span>{activeStory.author_name}{activeStory.is_author_premium && <span style={st.badge}> ✦</span>}</span>
+                  <button style={{...st.listenBtn, background: speaking ? "#f87171" : "#2a2836"}} onClick={() => handleListen(activeStory.title + ". " + activeStory.body)}>
+                    {speaking ? "⏹ Stop" : "▶ Listen"}
+                  </button>
                 </div>
                 <div style={st.divider} />
                 <div style={st.articleBody}>
@@ -499,6 +516,7 @@
       pricePer:{fontSize:20,color:"#A7A9BE"},
       notif:{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#E8C547",color:"#0F0E17",padding:"12px 24px",borderRadius:30,fontWeight:700,fontSize:14,zIndex:999,fontFamily:"Georgia,serif",boxShadow:"0 4px 20px rgba(0,0,0,0.4)",whiteSpace:"nowrap"},
       footer:{borderTop:"1px solid #2a2836",padding:"24px 32px",display:"flex",justifyContent:"space-between",alignItems:"center"},
+      listenBtn:{background:"#2a2836",border:"none",color:"#FFFFFE",padding:"8px 16px",borderRadius:20,cursor:"pointer",fontSize:13,fontFamily:"Georgia,serif"},
     };
 
     const root = ReactDOM.createRoot(document.getElementById("root"));
